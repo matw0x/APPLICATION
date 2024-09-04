@@ -15,14 +15,17 @@ class User
     #[ORM\Column(type: Types::INTEGER)]
     private int $id;
 
-    #[ORM\Column(type: Types::STRING, length: 127)]
+    #[ORM\Column(type: Types::STRING, length: 63)]
     private string $name;
 
-    #[ORM\Column(type: Types::STRING, length: 127)]
-    private ?string $surname = null;
+    #[ORM\Column(type: Types::STRING, length: 63)]
+    private string $surname;
 
-    #[ORM\Column(type: Types::STRING, length: 31)]
+    #[ORM\Column(type: Types::STRING, length: 63)]
     private string $phone;
+
+    #[ORM\Column(type: Types::STRING, length: 63)]
+    private string $role;
 
     public function getId(): int
     {
@@ -61,6 +64,18 @@ class User
     public function setPhone(string $phone): static
     {
         $this->phone = $phone;
+
+        return $this;
+    }
+
+    public function getRole(): string
+    {
+        return $this->role;
+    }
+
+    public function setRole(string $role): static
+    {
+        $this->role = $role;
 
         return $this;
     }

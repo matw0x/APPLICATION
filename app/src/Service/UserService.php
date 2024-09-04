@@ -5,16 +5,27 @@ namespace App\Service;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
-class UserService
+readonly class UserService
 {
     function __construct(
+        // private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
-        private EntityManagerInterface $entityManager
     )
     {
     }
 
     public function getUsers(): array
+    {
+        $users = $this->userRepository->findAll();
+        $result = [];
+        foreach ($users as $user) {
+            $result[] = $user->getName();
+        }
+
+        return $result;
+    }
+
+    public function register(): void
     {
 
     }

@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20240903180736 extends AbstractMigration
+final class Version20240904120211 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -21,7 +21,7 @@ final class Version20240903180736 extends AbstractMigration
     {
         // this up() migration is auto-generated, please modify it to your needs
         $this->addSql('CREATE SEQUENCE "user_id_seq" INCREMENT BY 1 MINVALUE 1 START 1');
-        $this->addSql('CREATE TABLE "user" (id INT NOT NULL, name VARCHAR(127) NOT NULL, surname VARCHAR(127) NOT NULL, phone VARCHAR(31) NOT NULL, PRIMARY KEY(id))');
+        $this->addSql('CREATE TABLE "user" (id INT NOT NULL, name VARCHAR(63) NOT NULL, surname VARCHAR(63) NOT NULL, phone VARCHAR(63) NOT NULL, role VARCHAR(63) NOT NULL, PRIMARY KEY(id))');
     }
 
     public function down(Schema $schema): void
