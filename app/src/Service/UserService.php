@@ -3,12 +3,14 @@
 namespace App\Service;
 
 use App\Repository\UserRepository;
+use App\Service\MagicLink\MagicLinkService;
+use App\Service\Mailer\YandexMailerService;
 use Doctrine\ORM\EntityManagerInterface;
 
 readonly class UserService
 {
     function __construct(
-        // private readonly EntityManagerInterface $entityManager,
+        private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
     )
     {
@@ -25,8 +27,11 @@ readonly class UserService
         return $result;
     }
 
-    public function register(): void
+    public function register(string $email, MagicLinkService $magicLinkService, YandexMailerService $mailerService): void
     {
+        $token = $magicLinkService->generateToken();
+        $magicLink = $magicLinkService->createMagicLink($token);
 
+        $mailerService->sendMagicLink($email, $magicLink);
     }
 }

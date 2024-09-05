@@ -2,8 +2,8 @@
 
 namespace App\Helper\Enum;
 
-enum UserRole: int
+enum UserRole: string
 {
-    case User = 1;
-    case Admin = 10;
+    case User = '1';
+    case Admin = '10';
 }

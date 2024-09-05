@@ -22,7 +22,7 @@ class User
     private string $surname;
 
     #[ORM\Column(type: Types::STRING, length: 63)]
-    private string $phone;
+    private string $email;
 
     #[ORM\Column(type: Types::STRING, length: 63)]
     private string $role;
@@ -56,14 +56,14 @@ class User
         return $this;
     }
 
-    public function getPhone(): string
+    public function getEmail(): string
     {
-        return $this->phone;
+        return $this->email;
     }
 
-    public function setPhone(string $phone): static
+    public function setEmail(string $email): static
     {
-        $this->phone = $phone;
+        $this->email = $email;
 
         return $this;
     }
