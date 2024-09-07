@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use App\Entity\MagicLinkToken;
+use App\Helper\Enum\MagicLinkTokenStatus;
 use App\Repository\UserRepository;
 use App\Service\MagicLink\MagicLinkService;
 use App\Service\Mailer\YandexMailerService;
@@ -32,6 +34,21 @@ readonly class UserService
         $token = $magicLinkService->generateToken();
         $magicLink = $magicLinkService->createMagicLink($token);
 
+        $magicLinkToken = (new MagicLinkToken())
+            ->setToken($token)
+            ->setStatus(MagicLinkTokenStatus::IS_ACTIVE->value)
+            ->setExpiresAt(new \DateTimeImmutable('+30 minutes'));
+
+        $this->entityManager->persist($magicLinkToken);
+        $this->entityManager->flush();
+
         $mailerService->sendMagicLink($email, $magicLink);
+    }
+
+    public function verify(): bool
+    {
+
+
+        return true;
     }
 }

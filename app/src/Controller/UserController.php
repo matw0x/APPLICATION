@@ -2,17 +2,17 @@
 
 namespace App\Controller;
 
-use App\Entity\User;
+use App\Helper\DTO\LoginDTO;
 use App\Service\MagicLink\MagicLinkService;
 use App\Service\Mailer\YandexMailerService;
 use App\Service\UserService;
+use App\Service\ValidatorService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route(path: '/users')]
 class UserController extends AbstractController
@@ -20,10 +20,9 @@ class UserController extends AbstractController
     function __construct(
         private readonly UserService         $userService,
         private readonly SerializerInterface $serializer,
-        private readonly ValidatorInterface  $validator,
+        private readonly ValidatorService    $validatorService,
         private readonly YandexMailerService $yandexMailerService,
         private readonly MagicLinkService    $magicLinkService,
-
     )
     {
     }
@@ -40,18 +39,10 @@ class UserController extends AbstractController
     #[Route(path: '/register', name: 'apiRegUser', methods: Request::METHOD_POST)]
     public function register(Request $request): JsonResponse
     {
-//        $data = $this->serializer->deserialize($request->getContent(), User::class, 'json');
-//        $this->validator->validate($data, ['register']);
+        $data = $this->serializer->deserialize($request->getContent(), LoginDTO::class, 'json');
+        $this->validatorService->validate($data, ['register']);
 
-        $data = json_decode($request->getContent(), true);
-
-        $user = (new User())
-            ->setName($data['name'])
-            ->setSurname($data['surname'])
-            ->setEmail($data['email'])
-            ->setRole($data['role']);
-
-        $this->userService->register($user->getEmail(), $this->magicLinkService, $this->yandexMailerService);
+        $this->userService->register($data->email, $this->magicLinkService, $this->yandexMailerService);
 
         return $this->json(
             data: 'Link was sent! Check your email',
@@ -59,12 +50,13 @@ class UserController extends AbstractController
         );
     }
 
-    #[Route(path: '/verify', name: 'apiVerifyAccount', methods: Request::METHOD_POST)]
+    #[Route(path: '/verify', name: 'apiVerifyReg', methods: Request::METHOD_POST)]
     public function verify(Request $request): JsonResponse
     {
+        $token = $request->query->get('token');
 
         return $this->json(
-            'x'
+            $token
         );
     }
 }

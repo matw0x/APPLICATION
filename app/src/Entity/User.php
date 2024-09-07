@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -26,6 +28,17 @@ class User
 
     #[ORM\Column(type: Types::STRING, length: 63)]
     private string $role;
+
+    /**
+     * @var Collection<int, MagicLinkToken>
+     */
+    #[ORM\OneToMany(targetEntity: MagicLinkToken::class, mappedBy: 'owner')]
+    private Collection $magicLinkTokens;
+
+    public function __construct()
+    {
+        $this->magicLinkTokens = new ArrayCollection();
+    }
 
     public function getId(): int
     {
@@ -76,6 +89,36 @@ class User
     public function setRole(string $role): static
     {
         $this->role = $role;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, MagicLinkToken>
+     */
+    public function getMagicLinkTokens(): Collection
+    {
+        return $this->magicLinkTokens;
+    }
+
+    public function addMagicLinkToken(MagicLinkToken $magicLinkToken): static
+    {
+        if (!$this->magicLinkTokens->contains($magicLinkToken)) {
+            $this->magicLinkTokens->add($magicLinkToken);
+            $magicLinkToken->setOwner($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMagicLinkToken(MagicLinkToken $magicLinkToken): static
+    {
+        if ($this->magicLinkTokens->removeElement($magicLinkToken)) {
+            // set the owning side to null (unless already changed)
+            if ($magicLinkToken->getOwner() === $this) {
+                $magicLinkToken->setOwner(null);
+            }
+        }
 
         return $this;
     }

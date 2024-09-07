@@ -63,6 +63,20 @@
       <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/mailer" />
       <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/mime" />
       <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/polyfill-intl-idn" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/brick/math" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/psr/clock" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/ramsey/collection" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/ramsey/uuid" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/clock" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/messenger" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/phpdocumentor/reflection-common" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/phpdocumentor/reflection-docblock" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/phpdocumentor/type-resolver" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/phpstan/phpdoc-parser" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/property-access" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/property-info" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/type-info" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/webmozart/assert" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

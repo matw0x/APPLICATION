@@ -11,6 +11,7 @@ class ValidatorService
     )
     {
     }
+
     public function validate($body = [], $groupsBody = [], $query = [], $groupsQuery = []): void
     {
         $bodyErrors = $this->validator->validate($body, groups: $groupsBody);
@@ -18,12 +19,14 @@ class ValidatorService
             'body' => [],
             'query' => [],
         ];
+
         foreach ($bodyErrors as $error) {
             $validationErrors['body'][] = [
                 'name' => $error->getPropertyPath(),
                 'message' => $error->getMessage(),
             ];
         }
+
         $queryErrors = $this->validator->validate($query, groups: $groupsQuery);
         foreach ($queryErrors as $error) {
             $validationErrors['query'][] = [
@@ -31,6 +34,7 @@ class ValidatorService
                 'message' => $error->getMessage(),
             ];
         }
+
         if (count($validationErrors['body']) > 0 || count($validationErrors['query'])) {
             throw new ApiException(
                 'Ошибки валидации',
