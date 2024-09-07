@@ -2,7 +2,8 @@
 
 namespace App\Controller;
 
-use App\Helper\DTO\LoginDTO;
+use App\Entity\User;
+use App\Helper\DTO\RegisterDTO;
 use App\Service\MagicLink\MagicLinkService;
 use App\Service\Mailer\YandexMailerService;
 use App\Service\UserService;
@@ -39,24 +40,45 @@ class UserController extends AbstractController
     #[Route(path: '/register', name: 'apiRegUser', methods: Request::METHOD_POST)]
     public function register(Request $request): JsonResponse
     {
-        $data = $this->serializer->deserialize($request->getContent(), LoginDTO::class, 'json');
+        $data = $this->serializer->deserialize($request->getContent(), RegisterDTO::class, 'json');
         $this->validatorService->validate($data, ['register']);
 
-        $this->userService->register($data->email, $this->magicLinkService, $this->yandexMailerService);
+        $this->userService->register($data, $this->magicLinkService, $this->yandexMailerService);
 
         return $this->json(
             data: 'Link was sent! Check your email',
+            status: Response::HTTP_OK
+        );
+    }
+
+    #[Route(path: '/verify', name: 'apiVerifyEmail', methods: Request::METHOD_POST)]
+    public function verify(Request $request): JsonResponse
+    {
+        $registerDTO = $this->serializer->deserialize($request->getContent(), RegisterDTO::class, 'json');
+        $token = $request->query->get(MagicLinkService::TOKEN);
+        $this->userService->verify($token, $registerDTO);
+
+        return $this->json(
+            data: 'Successfully registered!',
             status: Response::HTTP_CREATED
         );
     }
 
-    #[Route(path: '/verify', name: 'apiVerifyReg', methods: Request::METHOD_POST)]
-    public function verify(Request $request): JsonResponse
+    #[Route(path: '/look/{id<\d+>}', name: 'apiLook', methods: Request::METHOD_GET)]
+    public function lookUser(User $id, Request $request): JsonResponse
     {
-        $token = $request->query->get('token');
+        $viewer = $this->serializer->deserialize($request->getContent(), User::class, 'json');
 
         return $this->json(
-            $token
+            data: $this->userService->look($id, $viewer),
+            status: Response::HTTP_OK
         );
+    }
+
+    #[Route(path: '/edit', name: 'apiEditUser', methods: Request::METHOD_PUT)]
+    public function editUser(Request $request): JsonResponse
+    {
+        $data = $this->serializer->deserialize($request->getContent(), User::class, 'json');
+
     }
 }

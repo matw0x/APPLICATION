@@ -17,7 +17,7 @@ class MagicLinkToken
     #[ORM\Column(type: Types::STRING, length: 127)]
     private string $token;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $expiresAt;
 
     #[ORM\Column(type: Types::INTEGER)]
@@ -25,6 +25,9 @@ class MagicLinkToken
 
     #[ORM\ManyToOne(inversedBy: 'magicLinkTokens')]
     private ?User $owner = null;
+
+    #[ORM\Column(type: Types::STRING, length: 127)]
+    private string $email;
 
     public function getId(): int
     {
@@ -75,6 +78,18 @@ class MagicLinkToken
     public function setOwner(?User $owner): static
     {
         $this->owner = $owner;
+
+        return $this;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(string $email): static
+    {
+        $this->email = $email;
 
         return $this;
     }

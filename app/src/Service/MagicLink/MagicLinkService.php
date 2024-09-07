@@ -7,6 +7,9 @@ use Ramsey\Uuid\Uuid;
 class MagicLinkService
 {
     const BASE_URL = 'localhost:8080';
+    const TOKEN_LIFETIME = '+30 minutes';
+    const TOKEN = 'token';
+
     public function generateToken(): string
     {
         return Uuid::uuid4()->toString();
@@ -14,6 +17,6 @@ class MagicLinkService
 
     public function createMagicLink(string $token): string
     {
-        return sprintf('%s/verify?token=%s', self::BASE_URL, $token);
+        return sprintf('%s/api/users/verify?token=%s', self::BASE_URL, $token);
     }
 }
