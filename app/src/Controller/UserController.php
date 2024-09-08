@@ -56,16 +56,15 @@ class UserController extends AbstractController
     {
         $registerDTO = $this->serializer->deserialize($request->getContent(), RegisterDTO::class, 'json');
         $token = $request->query->get(MagicLinkService::TOKEN);
-        $this->userService->verify($token, $registerDTO);
 
         return $this->json(
-            data: 'Successfully registered!',
+            data: $this->userService->verify($token, $registerDTO),
             status: Response::HTTP_CREATED
         );
     }
 
     #[Route(path: '/look/{id<\d+>}', name: 'apiLook', methods: Request::METHOD_GET)]
-    public function lookUser(User $id, Request $request): JsonResponse
+    public function look(User $id, Request $request): JsonResponse
     {
         $viewer = $this->serializer->deserialize($request->getContent(), User::class, 'json');
 
@@ -75,10 +74,10 @@ class UserController extends AbstractController
         );
     }
 
-    #[Route(path: '/edit', name: 'apiEditUser', methods: Request::METHOD_PUT)]
-    public function editUser(Request $request): JsonResponse
-    {
-        $data = $this->serializer->deserialize($request->getContent(), User::class, 'json');
-
-    }
+//    #[Route(path: '/edit', name: 'apiEditUser', methods: Request::METHOD_PUT)]
+//    public function editUser(Request $request): JsonResponse
+//    {
+//        $data = $this->serializer->deserialize($request->getContent(), User::class, 'json');
+//
+//    }
 }

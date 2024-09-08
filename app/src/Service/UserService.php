@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\Device;
 use App\Entity\MagicLinkToken;
 use App\Entity\User;
 use App\Helper\DTO\RegisterDTO;
@@ -12,14 +13,13 @@ use App\Repository\UserRepository;
 use App\Service\MagicLink\MagicLinkService;
 use App\Service\Mailer\YandexMailerService;
 use Doctrine\ORM\EntityManagerInterface;
-use http\Message;
 use Symfony\Component\HttpFoundation\Response;
 
 readonly class UserService
 {
     function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly UserRepository $userRepository,
+        private readonly UserRepository         $userRepository,
     )
     {
     }
@@ -52,10 +52,11 @@ readonly class UserService
         $mailerService->sendMagicLink($registerDTO->email, $magicLink);
     }
 
-    public function verify(string $token, RegisterDTO $registerDTO): void
+    public function verify(string $token, RegisterDTO $registerDTO): array
     {
         $magicLinkToken = $this->entityManager->getRepository(MagicLinkToken::class)->findOneBy([
-            MagicLinkService::TOKEN => $token
+            MagicLinkService::TOKEN => $token,
+            MagicLinkService::STATUS => MagicLinkTokenStatus::IS_ACTIVE->value
         ]);
 
         if (!$magicLinkToken)
@@ -83,12 +84,21 @@ readonly class UserService
             ->setSurname($registerDTO->surname)
             ->setRole(UserRole::USER->value);
 
+        $device = (new Device())
+            ->setOwner($user);
+
         $magicLinkToken
             ->setOwner($user)
             ->setStatus(MagicLinkTokenStatus::IS_USED->value);
 
         $this->entityManager->persist($user);
+        $this->entityManager->persist($device);
         $this->entityManager->flush();
+
+        return [
+            Device::ACCESS_TOKEN => $device->getAccessToken(),
+            Device::REFRESH_TOKEN => $device->getRefreshToken()
+        ];
     }
 
     public function look(User $user, User $viewer): array
