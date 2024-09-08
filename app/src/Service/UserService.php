@@ -6,6 +6,7 @@ use App\Entity\Device;
 use App\Entity\MagicLinkToken;
 use App\Entity\User;
 use App\Helper\DTO\RegisterDTO;
+use App\Helper\Enum\DeviceStatus;
 use App\Helper\Enum\MagicLinkTokenStatus;
 use App\Helper\Enum\UserRole;
 use App\Helper\Exception\ApiException;
@@ -101,26 +102,60 @@ readonly class UserService
         ];
     }
 
-    public function look(User $user, User $viewer): array
+    public function look(User $userToView, ?string $accessToken): array
     {
-        $watcher = $this->entityManager->getRepository(User::class)->findOneBy([
-            'email' => $viewer->getEmail(),
-            'role' => UserRole::ADMIN->value
-        ]);
-
-        if (!$watcher)
+        if (!$accessToken)
         {
             throw new ApiException(
-                message: 'Недостаточно прав для выполнения данной операции',
+                message: 'Пропущен токен в заголовке',
                 status: Response::HTTP_UNAUTHORIZED
             );
         }
 
+        $watcherDevice = $this->entityManager->getRepository(Device::class)->findOneBy([
+            Device::ACCESS_TOKEN => $accessToken,
+            Device::STATUS => DeviceStatus::ACTIVE->value
+        ]);
+
+        if (!$watcherDevice)
+        {
+            throw new ApiException(
+                message: 'Просматривающее устройство не найдено или не активно',
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $currentDateTime = new \DateTimeImmutable();
+
+        if ($watcherDevice->getAccessTokenExpiresAt() < $currentDateTime)
+        {
+            if ($watcherDevice->getRefreshTokenExpiresAt() < $currentDateTime)
+            {
+                throw new ApiException(
+                    message: 'Время жизни токенов истекло. Требуется повторная аутентификация',
+                    status: Response::HTTP_UNAUTHORIZED
+                );
+            }
+
+            $watcherDevice->refreshTokens($currentDateTime);
+            $this->entityManager->flush();
+        }
+
+        $watcherUser = $watcherDevice->getOwner();
+        if (!$watcherUser->canViewProfile($userToView))
+        {
+            throw new ApiException(
+                message: 'Недостаточно прав для просмотра профиля',
+                status: Response::HTTP_FORBIDDEN
+            );
+        }
+
         return [
-            $user->getName(),
-            $user->getSurname(),
-            $user->getEmail(),
-            $user->getRole()
+            'name' => $userToView->getName(),
+            'surname' => $userToView->getSurname(),
+            'email' => $userToView->getEmail(),
+            'role' => $userToView->getRole(),
+            'newAccessToken' => $watcherDevice->getAccessToken()
         ];
     }
 }

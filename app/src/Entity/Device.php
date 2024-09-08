@@ -14,6 +14,7 @@ class Device
     const REFRESH_TOKEN_LIFETIME = '30 days';
     const ACCESS_TOKEN = 'accessToken';
     const REFRESH_TOKEN = 'refreshToken';
+    const STATUS = 'status';
 
     function __construct()
     {
@@ -128,5 +129,13 @@ class Device
     public static function generateToken(): string
     {
         return md5(random_int(100000, 999999) . microtime());
+    }
+
+    public function refreshTokens(\DateTimeImmutable $date): void
+    {
+        $this->accessToken = self::generateToken();
+        $this->refreshToken = self::getRefreshToken();
+        $this->accessTokenExpiresAt = $date->modify(self::ACCESS_TOKEN_LIFETIME);
+        $this->refreshTokenExpiresAt = $date->modify(self::REFRESH_TOKEN_LIFETIME);
     }
 }

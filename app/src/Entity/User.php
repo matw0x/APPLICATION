@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Helper\Enum\UserRole;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -45,6 +46,11 @@ class User
     {
         $this->magicLinkTokens = new ArrayCollection();
         $this->devices = new ArrayCollection();
+    }
+
+    public function canViewProfile(User $userToView): bool
+    {
+        return $this === $userToView || $this->getRole() === UserRole::ADMIN->value;
     }
 
     public function getId(): int

@@ -4,10 +4,12 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Helper\DTO\RegisterDTO;
+use App\Helper\Exception\ApiException;
 use App\Service\MagicLink\MagicLinkService;
 use App\Service\Mailer\YandexMailerService;
 use App\Service\UserService;
 use App\Service\ValidatorService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,11 +21,12 @@ use Symfony\Component\Serializer\SerializerInterface;
 class UserController extends AbstractController
 {
     function __construct(
-        private readonly UserService         $userService,
-        private readonly SerializerInterface $serializer,
-        private readonly ValidatorService    $validatorService,
-        private readonly YandexMailerService $yandexMailerService,
-        private readonly MagicLinkService    $magicLinkService,
+        private readonly UserService            $userService,
+        private readonly SerializerInterface    $serializer,
+        private readonly ValidatorService       $validatorService,
+        private readonly YandexMailerService    $yandexMailerService,
+        private readonly MagicLinkService       $magicLinkService,
+        private readonly EntityManagerInterface $entityManager
     )
     {
     }
@@ -64,12 +67,21 @@ class UserController extends AbstractController
     }
 
     #[Route(path: '/look/{id<\d+>}', name: 'apiLook', methods: Request::METHOD_GET)]
-    public function look(User $id, Request $request): JsonResponse
+    public function look(int $id, Request $request): JsonResponse
     {
-        $viewer = $this->serializer->deserialize($request->getContent(), User::class, 'json');
+        $userToView = $this->entityManager->getRepository(User::class)->find($id);
+        if (!$userToView)
+        {
+            throw new ApiException(
+                message: 'Пользователь не найден',
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $accessToken = $request->headers->get(MagicLinkService::TOKEN);
 
         return $this->json(
-            data: $this->userService->look($id, $viewer),
+            data: $this->userService->look($userToView, $accessToken),
             status: Response::HTTP_OK
         );
     }
