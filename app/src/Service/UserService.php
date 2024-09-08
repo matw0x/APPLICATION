@@ -131,6 +131,9 @@ readonly class UserService
         {
             if ($watcherDevice->getRefreshTokenExpiresAt() < $currentDateTime)
             {
+                $watcherDevice->setStatus(DeviceStatus::INACTIVE->value);
+                $this->entityManager->flush();
+
                 throw new ApiException(
                     message: 'Время жизни токенов истекло. Требуется повторная аутентификация',
                     status: Response::HTTP_UNAUTHORIZED
