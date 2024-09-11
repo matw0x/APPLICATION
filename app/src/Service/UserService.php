@@ -5,7 +5,9 @@ namespace App\Service;
 use App\Entity\Device;
 use App\Entity\MagicLinkToken;
 use App\Entity\User;
-use App\Helper\DTO\RegisterDTO;
+use App\Helper\Const\Keywords;
+use App\Helper\DTO\User\EditDTO;
+use App\Helper\DTO\User\RegisterDTO;
 use App\Helper\Enum\DeviceStatus;
 use App\Helper\Enum\MagicLinkTokenStatus;
 use App\Helper\Enum\UserRole;
@@ -13,6 +15,7 @@ use App\Helper\Exception\ApiException;
 use App\Repository\UserRepository;
 use App\Service\MagicLink\MagicLinkService;
 use App\Service\Mailer\YandexMailerService;
+use App\Service\Token\TokenService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,11 +24,23 @@ readonly class UserService
     function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository         $userRepository,
+        private readonly TokenService           $tokenService,
     )
     {
     }
 
-    public function getUsers(): array
+    private function checkDeviceNullable(?Device $device): void
+    {
+        if (!$device)
+        {
+            throw new ApiException(
+                message: 'Устройство не найдено или не активно',
+                status: Response::HTTP_NOT_FOUND
+            );
+        }
+    }
+
+    public function getUsers(): array // FUNC FOR TESTING!
     {
         $users = $this->userRepository->findAll();
         $result = [];
@@ -56,17 +71,11 @@ readonly class UserService
     public function verify(string $token, RegisterDTO $registerDTO): array
     {
         $magicLinkToken = $this->entityManager->getRepository(MagicLinkToken::class)->findOneBy([
-            MagicLinkService::TOKEN => $token,
-            MagicLinkService::STATUS => MagicLinkTokenStatus::IS_ACTIVE->value
+            Keywords::TOKEN => $token,
+            Keywords::STATUS => MagicLinkTokenStatus::IS_ACTIVE->value
         ]);
 
-        if (!$magicLinkToken)
-        {
-            throw new ApiException(
-                message: 'Токен не найден',
-                status: Response::HTTP_BAD_REQUEST
-            );
-        }
+        $this->tokenService->checkTokenNullable($magicLinkToken);
 
         if ($magicLinkToken->getExpiresAt() < new \DateTimeImmutable())
         {
@@ -74,8 +83,8 @@ readonly class UserService
             $this->entityManager->flush();
 
             throw new ApiException(
-                message: 'Время жизни токена вышло',
-                status: Response::HTTP_BAD_REQUEST
+                message: 'Время действия ссылки истекло',
+                status: Response::HTTP_FORBIDDEN
             );
         }
 
@@ -85,8 +94,7 @@ readonly class UserService
             ->setSurname($registerDTO->surname)
             ->setRole(UserRole::USER->value);
 
-        $device = (new Device())
-            ->setOwner($user);
+        $device = $this->tokenService->createTokens($user);
 
         $magicLinkToken
             ->setOwner($user)
@@ -97,41 +105,18 @@ readonly class UserService
         $this->entityManager->flush();
 
         return [
-            Device::ACCESS_TOKEN => $device->getAccessToken(),
-            Device::REFRESH_TOKEN => $device->getRefreshToken()
+            Keywords::ACCESS_TOKEN => $device->getAccessToken(),
+            Keywords::REFRESH_TOKEN => $device->getRefreshToken()
         ];
     }
 
-    public function look(User $userToView, ?string $accessToken): array
+    private function checkTokensLifetime(Device $device, \DateTimeImmutable $currentDateTime): void
     {
-        if (!$accessToken)
+        if ($device->getAccessTokenExpiresAt() < $currentDateTime)
         {
-            throw new ApiException(
-                message: 'Пропущен токен в заголовке',
-                status: Response::HTTP_UNAUTHORIZED
-            );
-        }
-
-        $watcherDevice = $this->entityManager->getRepository(Device::class)->findOneBy([
-            Device::ACCESS_TOKEN => $accessToken,
-            Device::STATUS => DeviceStatus::ACTIVE->value
-        ]);
-
-        if (!$watcherDevice)
-        {
-            throw new ApiException(
-                message: 'Просматривающее устройство не найдено или не активно',
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-
-        $currentDateTime = new \DateTimeImmutable();
-
-        if ($watcherDevice->getAccessTokenExpiresAt() < $currentDateTime)
-        {
-            if ($watcherDevice->getRefreshTokenExpiresAt() < $currentDateTime)
+            if ($device->getRefreshTokenExpiresAt() < $currentDateTime)
             {
-                $watcherDevice->setStatus(DeviceStatus::INACTIVE->value);
+                $device->setStatus(DeviceStatus::INACTIVE->value);
                 $this->entityManager->flush();
 
                 throw new ApiException(
@@ -140,25 +125,70 @@ readonly class UserService
                 );
             }
 
-            $watcherDevice->refreshTokens($currentDateTime);
+            $device->refreshTokens($currentDateTime);
             $this->entityManager->flush();
         }
+    }
+
+    public function look(User $userToView, ?string $accessToken): array
+    {
+        $this->checkTokenNullable($accessToken);
+
+        $watcherDevice = $this->entityManager->getRepository(Device::class)->findOneBy([
+            Keywords::ACCESS_TOKEN => $accessToken,
+            Keywords::STATUS => DeviceStatus::ACTIVE->value
+        ]);
+
+        $this->checkDeviceNullable($watcherDevice);
+
+        $currentDateTime = new \DateTimeImmutable();
+        $this->checkTokensLifetime($watcherDevice, $currentDateTime);
 
         $watcherUser = $watcherDevice->getOwner();
-        if (!$watcherUser->canViewProfile($userToView))
-        {
-            throw new ApiException(
-                message: 'Недостаточно прав для просмотра профиля',
-                status: Response::HTTP_FORBIDDEN
-            );
-        }
+        $watcherUser->checkCanCrud($userToView);
 
         return [
             'name' => $userToView->getName(),
             'surname' => $userToView->getSurname(),
             'email' => $userToView->getEmail(),
             'role' => $userToView->getRole(),
-            'newAccessToken' => $watcherDevice->getAccessToken()
+            'yourAccessToken' => $watcherDevice->getAccessToken()
+        ];
+    }
+
+    public function edit(User $userToEdit, EditDTO $userData, ?string $accessToken): array
+    {
+        $this->checkTokenNullable($accessToken);
+
+        $editorDevice = $this->entityManager->getRepository(Device::class)->findOneBy([
+            Keywords::ACCESS_TOKEN => $accessToken,
+            Keywords::STATUS => DeviceStatus::ACTIVE->value
+        ]);
+
+        $this->checkDeviceNullable($editorDevice);
+
+        $currentDateTime = new \DateTimeImmutable();
+        $this->checkTokensLifetime($editorDevice, $currentDateTime);
+
+        $editorUser = $editorDevice->getOwner();
+        $editorUser->checkCanCrud($userToEdit);
+
+        if ($userData->name)
+        {
+            $userToEdit->setName($userData->name);
+        }
+
+        if ($userData->surname)
+        {
+            $userToEdit->setSurname($userData->surname);
+        }
+
+        $this->entityManager->flush();
+
+        return [
+            'name' => $userToEdit->getName(),
+            'surname' => $userToEdit->getSurname(),
+            'accessToken' => $accessToken
         ];
     }
 }

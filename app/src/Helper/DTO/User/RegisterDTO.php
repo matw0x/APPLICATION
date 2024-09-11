@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Helper\DTO;
+namespace App\Helper\DTO\User;
 
 use Doctrine\DBAL\Types\Types;
 use Symfony\Component\Validator\Constraints as Assert;

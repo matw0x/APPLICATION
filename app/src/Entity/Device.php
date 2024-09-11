@@ -12,16 +12,9 @@ class Device
 {
     const ACCESS_TOKEN_LIFETIME = '30 minutes';
     const REFRESH_TOKEN_LIFETIME = '30 days';
-    const ACCESS_TOKEN = 'accessToken';
-    const REFRESH_TOKEN = 'refreshToken';
-    const STATUS = 'status';
 
     function __construct()
     {
-        $this->accessToken = self::generateToken();
-        $this->refreshToken = self::generateToken();
-        $this->accessTokenExpiresAt = new \DateTimeImmutable(Device::ACCESS_TOKEN_LIFETIME);
-        $this->refreshTokenExpiresAt = new \DateTimeImmutable(Device::REFRESH_TOKEN_LIFETIME);
         $this->status = DeviceStatus::ACTIVE->value;
     }
 
@@ -134,7 +127,7 @@ class Device
     public function refreshTokens(\DateTimeImmutable $date): void
     {
         $this->accessToken = self::generateToken();
-        $this->refreshToken = self::getRefreshToken();
+        $this->refreshToken = self::generateToken();
         $this->accessTokenExpiresAt = $date->modify(self::ACCESS_TOKEN_LIFETIME);
         $this->refreshTokenExpiresAt = $date->modify(self::REFRESH_TOKEN_LIFETIME);
     }
