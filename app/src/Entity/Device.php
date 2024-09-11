@@ -118,17 +118,4 @@ class Device
 
         return $this;
     }
-
-    public static function generateToken(): string
-    {
-        return md5(random_int(100000, 999999) . microtime());
-    }
-
-    public function refreshTokens(\DateTimeImmutable $date): void
-    {
-        $this->accessToken = self::generateToken();
-        $this->refreshToken = self::generateToken();
-        $this->accessTokenExpiresAt = $date->modify(self::ACCESS_TOKEN_LIFETIME);
-        $this->refreshTokenExpiresAt = $date->modify(self::REFRESH_TOKEN_LIFETIME);
-    }
 }

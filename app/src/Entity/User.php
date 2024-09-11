@@ -61,7 +61,7 @@ class User
         }
     }
 
-    public function checkCanCrud(User $user): void
+    public function checkPermission(User $user): void
     {
         if (!($this === $user || $this->getRole() === UserRole::ADMIN->value))
         {
