@@ -22,7 +22,7 @@ class TokenService
     const REFRESH_TOKEN_LIFETIME = '30 days';
     const MINIMAL_DAYS_TO_UPDATE = '7 days';
 
-    public static function generateToken(): string
+    public function generateToken(): string
     {
         return bin2hex(random_bytes(32));
     }
@@ -73,7 +73,7 @@ class TokenService
             }
 
             // если до конца жизни refresh токена осталось меньше N дней, обновляем его
-            $daysUntilExpiration = $device->getRefreshTokenExpiresAt()->diff(new \DateTimeImmutable())->days;
+            $daysUntilExpiration = $device->getRefreshTokenExpiresAt()->diff(new DateTimeImmutable())->days;
             if ($daysUntilExpiration <= self::MINIMAL_DAYS_TO_UPDATE) {
                 $device->setRefreshToken($this->generateToken());
                 $device->setRefreshTokenExpiresAt((new DateTimeImmutable())->modify(self::REFRESH_TOKEN_LIFETIME));

@@ -89,12 +89,10 @@ readonly class UserService
 
     public function look(User $userToView, ?string $accessToken): array
     {
-        $this->tokenService->checkTokenNullable($accessToken);
         $watcherDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
         $this->tokenService->refreshTokens($watcherDevice);
 
-        $watcherUser = $watcherDevice->getOwner();
-        $watcherUser->checkPermission($userToView);
+        $watcherDevice->getOwner()->validateUserPermission($userToView);
 
         return [
             'name' => $userToView->getName(),
@@ -107,12 +105,10 @@ readonly class UserService
 
     public function edit(User $userToEdit, EditDTO $userData, ?string $accessToken): array
     {
-        $this->tokenService->checkTokenNullable($accessToken);
         $editorDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
         $this->tokenService->refreshTokens($editorDevice);
 
-        $editorUser = $editorDevice->getOwner();
-        $editorUser->checkPermission($userToEdit);
+        $editorDevice->getOwner()->validateUserPermission($userToEdit);
 
         if ($newName = $userData->name) {
             $userToEdit->setName($newName);
@@ -125,9 +121,22 @@ readonly class UserService
         $this->entityManager->flush();
 
         return [
-            'name' => $userToEdit->getName(),
-            'surname' => $userToEdit->getSurname(),
-            'accessToken' => $editorDevice->getAccessToken()
+            Keywords::NAME => $userToEdit->getName(),
+            Keywords::SURNAME => $userToEdit->getSurname(),
+            Keywords::ACCESS_TOKEN => $editorDevice->getAccessToken()
         ];
+    }
+
+    public function delete(User $userToDelete, ?string $accessToken): void
+    {
+        $deleterDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
+        $this->tokenService->refreshTokens($deleterDevice);
+
+        $deleterUser = $deleterDevice->getOwner();
+        $deleterUser->validateUserPermission($userToDelete);
+
+        $this->entityManager->remove($deleterDevice);
+        $this->entityManager->remove($deleterUser);
+        $this->entityManager->flush();
     }
 }

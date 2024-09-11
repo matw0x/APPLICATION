@@ -71,7 +71,7 @@ class UserController extends AbstractController
     public function lookUser(int $id, Request $request): JsonResponse
     {
         $userToView = $this->entityManager->getRepository(User::class)->find($id);
-        $userToView->checkUserNullable($userToView);
+        $userToView->validateUserExistence($userToView);
 
         $accessToken = $request->headers->get(Keywords::TOKEN);
 
@@ -85,7 +85,7 @@ class UserController extends AbstractController
     public function editUser(int $id, Request $request): JsonResponse
     {
         $userToEdit = $this->entityManager->getRepository(User::class)->find($id);
-        $userToEdit->checkUserNullable($userToEdit);
+        $userToEdit->validateUserExistence($userToEdit);
 
         $userData = $this->serializer->deserialize($request->getContent(), EditDTO::class, 'json');
         $this->validatorService->validate(body: $userData, groupsBody: ['edit']);
@@ -94,6 +94,21 @@ class UserController extends AbstractController
 
         return $this->json(
             data: $this->userService->edit($userToEdit, $userData, $accessToken),
+            status: Response::HTTP_OK
+        );
+    }
+
+    #[Route(path: '/delete/{id<\d+>}', name: 'apiDeleteUser', methods: Request::METHOD_DELETE)]
+    public function deleteUser(int $id, Request $request): JsonResponse
+    {
+        $userToDelete = $this->entityManager->getRepository(User::class)->find($id);
+        $userToDelete->checkUserNullable($userToDelete);
+
+        $accessToken = $request->headers->get(Keywords::TOKEN);
+        $this->userService->delete($userToDelete, $accessToken);
+
+        return $this->json(
+            data: 'User was deleted!',
             status: Response::HTTP_OK
         );
     }

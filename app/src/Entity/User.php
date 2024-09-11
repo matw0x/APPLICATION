@@ -50,7 +50,7 @@ class User
         $this->devices = new ArrayCollection();
     }
 
-    public function checkUserNullable(?User $user): void
+    public function validateUserExistence(?User $user): void
     {
         if (!$user)
         {
@@ -61,7 +61,7 @@ class User
         }
     }
 
-    public function checkPermission(User $user): void
+    public function validateUserPermission(User $user): void
     {
         if (!($this === $user || $this->getRole() === UserRole::ADMIN->value))
         {

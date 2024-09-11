@@ -10,9 +10,6 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: DeviceRepository::class)]
 class Device
 {
-    const ACCESS_TOKEN_LIFETIME = '30 minutes';
-    const REFRESH_TOKEN_LIFETIME = '30 days';
-
     function __construct()
     {
         $this->status = DeviceStatus::ACTIVE->value;

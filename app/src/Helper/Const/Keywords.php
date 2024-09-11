@@ -8,4 +8,6 @@ class Keywords
     const STATUS = 'status';
     const ACCESS_TOKEN = 'accessToken';
     const REFRESH_TOKEN = 'refreshToken';
+    const NAME = 'name';
+    const SURNAME = 'surname';
 }

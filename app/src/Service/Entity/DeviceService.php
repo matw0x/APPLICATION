@@ -6,19 +6,20 @@ use App\Entity\Device;
 use App\Helper\Const\Keywords;
 use App\Helper\Enum\DeviceStatus;
 use App\Helper\Exception\ApiException;
+use App\Service\Token\TokenService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
-class DeviceService
+readonly class DeviceService
 {
     function __construct(
         private EntityManagerInterface $entityManager,
+        private TokenService           $tokenService
     )
     {
     }
 
-
-    public function checkDeviceNullable(?Device $device): void
+    public function validateDeviceExistence(?Device $device): void
     {
         if (!$device) {
             throw new ApiException(
@@ -28,14 +29,16 @@ class DeviceService
         }
     }
 
-    public function getDeviceByAccessToken(string $accessToken): Device
+    public function getDeviceByAccessToken(?string $accessToken): Device
     {
+        $this->tokenService->checkTokenNullable($accessToken);
+
         $device = $this->entityManager->getRepository(Device::class)->findOneBy([
             Keywords::ACCESS_TOKEN => $accessToken,
             Keywords::STATUS => DeviceStatus::ACTIVE->value
         ]);
 
-        $this->checkDeviceNullable($device);
+        $this->validateDeviceExistence($device);
 
         return $device;
     }
