@@ -102,7 +102,7 @@ class UserController extends AbstractController
     public function deleteUser(int $id, Request $request): JsonResponse
     {
         $userToDelete = $this->entityManager->getRepository(User::class)->find($id);
-        $userToDelete->checkUserNullable($userToDelete);
+        $userToDelete->validateUserExistence($userToDelete);
 
         $accessToken = $request->headers->get(Keywords::TOKEN);
         $this->userService->delete($userToDelete, $accessToken);

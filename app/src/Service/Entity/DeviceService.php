@@ -31,7 +31,7 @@ readonly class DeviceService
 
     public function getDeviceByAccessToken(?string $accessToken): Device
     {
-        $this->tokenService->checkTokenNullable($accessToken);
+        $this->tokenService->validateTokenExistence($accessToken);
 
         $device = $this->entityManager->getRepository(Device::class)->findOneBy([
             Keywords::ACCESS_TOKEN => $accessToken,

@@ -62,7 +62,7 @@ readonly class UserService
             Keywords::STATUS => MagicLinkTokenStatus::IS_ACTIVE->value
         ]);
 
-        $this->tokenService->checkTokenNullable($magicLinkToken);
+        $this->tokenService->validateTokenExistence($magicLinkToken->getToken());
         $this->magicLinkService->validateMagicLinkToken($magicLinkToken);
 
         $user = (new User())
@@ -127,7 +127,7 @@ readonly class UserService
         ];
     }
 
-    public function delete(User $userToDelete, ?string $accessToken): void
+    public function delete(User $userToDelete, ?string $accessToken): array
     {
         $deleterDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
         $this->tokenService->refreshTokens($deleterDevice);
@@ -138,5 +138,9 @@ readonly class UserService
         $this->entityManager->remove($deleterDevice);
         $this->entityManager->remove($deleterUser);
         $this->entityManager->flush();
+
+        return [
+            Keywords::ACCESS_TOKEN => $deleterDevice->getAccessToken()
+        ];
     }
 }

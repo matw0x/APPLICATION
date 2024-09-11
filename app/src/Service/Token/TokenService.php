@@ -20,7 +20,7 @@ class TokenService
 
     const ACCESS_TOKEN_LIFETIME = '30 minutes';
     const REFRESH_TOKEN_LIFETIME = '30 days';
-    const MINIMAL_DAYS_TO_UPDATE = '7 days';
+    const MINIMAL_DAYS_TO_UPDATE = 7;
 
     public function generateToken(): string
     {
@@ -37,7 +37,7 @@ class TokenService
             ->setRefreshTokenExpiresAt((new DateTimeImmutable())->modify(self::REFRESH_TOKEN_LIFETIME));
     }
 
-    public function checkTokenNullable(?string $token): void
+    public function validateTokenExistence(?string $token): void
     {
         if (!$token)
         {
