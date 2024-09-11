@@ -50,7 +50,7 @@ class User
         $this->devices = new ArrayCollection();
     }
 
-    public function validateUserExistence(?User $user): void
+    public static function validateUserExistence(?User $user): void
     {
         if (!$user)
         {

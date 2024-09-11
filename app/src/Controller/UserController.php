@@ -71,7 +71,7 @@ class UserController extends AbstractController
     public function lookUser(int $id, Request $request): JsonResponse
     {
         $userToView = $this->entityManager->getRepository(User::class)->find($id);
-        $userToView->validateUserExistence($userToView);
+        User::validateUserExistence($userToView);
 
         $accessToken = $request->headers->get(Keywords::TOKEN);
 
@@ -85,7 +85,7 @@ class UserController extends AbstractController
     public function editUser(int $id, Request $request): JsonResponse
     {
         $userToEdit = $this->entityManager->getRepository(User::class)->find($id);
-        $userToEdit->validateUserExistence($userToEdit);
+        User::validateUserExistence($userToEdit);
 
         $userData = $this->serializer->deserialize($request->getContent(), EditDTO::class, 'json');
         $this->validatorService->validate(body: $userData, groupsBody: ['edit']);
@@ -102,7 +102,7 @@ class UserController extends AbstractController
     public function deleteUser(int $id, Request $request): JsonResponse
     {
         $userToDelete = $this->entityManager->getRepository(User::class)->find($id);
-        $userToDelete->validateUserExistence($userToDelete);
+        User::validateUserExistence($userToDelete);
 
         $accessToken = $request->headers->get(Keywords::TOKEN);
         $this->userService->delete($userToDelete, $accessToken);
