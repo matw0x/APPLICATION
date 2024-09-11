@@ -44,6 +44,9 @@ class User
     #[ORM\OneToMany(targetEntity: Device::class, mappedBy: 'owner')]
     private Collection $devices;
 
+    #[ORM\Column(type: Types::INTEGER)]
+    private int $status;
+
     public function __construct()
     {
         $this->magicLinkTokens = new ArrayCollection();
@@ -181,6 +184,18 @@ class User
                 $device->setOwner(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getStatus(): ?int
+    {
+        return $this->status;
+    }
+
+    public function setStatus(int $status): static
+    {
+        $this->status = $status;
 
         return $this;
     }

@@ -133,7 +133,7 @@ readonly class UserService
         $this->tokenService->refreshTokens($deleterDevice);
 
         $deleterUser = $deleterDevice->getOwner();
-        $deleterUser->validateUserPermission($deleterUser);
+        $deleterUser->validateUserPermission($userToDelete);
 
         foreach ($userToDelete->getMagicLinkTokens() as $magicLinkToken) {
             $this->entityManager->remove($magicLinkToken);
