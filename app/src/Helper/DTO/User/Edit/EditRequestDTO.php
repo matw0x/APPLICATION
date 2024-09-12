@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Helper\DTO\User;
+namespace App\Helper\DTO\User\Edit;
 
-use Symfony\Component\Validator\Constraints as Assert;
 use Doctrine\DBAL\Types\Types;
+use Symfony\Component\Validator\Constraints as Assert;
 
-class EditDTO
+class EditRequestDTO
 {
     #[Assert\Type(type: Types::STRING, groups: ['edit'])]
     #[Assert\Length(max: 63, groups: ['edit'])]

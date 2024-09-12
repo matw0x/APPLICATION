@@ -5,10 +5,14 @@ namespace App\Service\Entity;
 use App\Entity\MagicLinkToken;
 use App\Entity\User;
 use App\Helper\Const\Keywords;
-use App\Helper\DTO\User\EditDTO;
-use App\Helper\DTO\User\RegisterDTO;
+use App\Helper\DTO\User\Edit\EditRequestDTO;
+use App\Helper\DTO\User\Edit\EditResponseDTO;
+use App\Helper\DTO\User\Register\RegisterDTO;
+use App\Helper\DTO\User\Stats\StatsResponseDTO;
+use App\Helper\DTO\User\Verify\VerifyRequestDTO;
+use App\Helper\DTO\User\Verify\VerifyResponseDTO;
 use App\Helper\Enum\MagicLinkTokenStatus;
-use App\Helper\Enum\UserRole;
+use App\Helper\Trait\UserValidationTrait;
 use App\Repository\UserRepository;
 use App\Service\MagicLink\MagicLinkService;
 use App\Service\Mailer\YandexMailerService;
@@ -17,12 +21,14 @@ use Doctrine\ORM\EntityManagerInterface;
 
 readonly class UserService
 {
+    use UserValidationTrait;
+
     function __construct(
         private EntityManagerInterface $entityManager,
         private UserRepository         $userRepository,
         private TokenService           $tokenService,
         private MagicLinkService       $magicLinkService,
-        private DeviceService          $deviceService,
+        private DeviceService          $deviceService
     )
     {
     }
@@ -55,7 +61,7 @@ readonly class UserService
         $mailerService->sendMagicLink($registerDTO->email, $magicLink);
     }
 
-    public function verify(string $token, RegisterDTO $registerDTO): array
+    public function verify(string $token, VerifyRequestDTO $verifyDTO): VerifyResponseDTO
     {
         $magicLinkToken = $this->entityManager->getRepository(MagicLinkToken::class)->findOneBy([
             Keywords::TOKEN => $token,
@@ -67,8 +73,8 @@ readonly class UserService
 
         $user = (new User())
             ->setEmail($magicLinkToken->getEmail())
-            ->setName($registerDTO->name)
-            ->setSurname($registerDTO->surname);
+            ->setName($verifyDTO->name)
+            ->setSurname($verifyDTO->surname);
 
         $device = $this->tokenService->createTokens($user);
 
@@ -80,39 +86,29 @@ readonly class UserService
         $this->entityManager->persist($device);
         $this->entityManager->flush();
 
-        return [
-            Keywords::ACCESS_TOKEN => $device->getAccessToken(),
-            Keywords::REFRESH_TOKEN => $device->getRefreshToken()
-        ];
+        return new VerifyResponseDTO($device);
     }
 
-    public function look(User $userToView, ?string $accessToken): array
+    public function stats(User $userToView, ?string $accessToken): StatsResponseDTO
     {
         $watcherDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
         $this->tokenService->refreshTokens($watcherDevice);
 
         $watcherUser = $watcherDevice->getOwner();
-        $watcherUser->validateUserPermission($userToView);
-        $watcherUser->validateUserStatus($watcherUser);
+        $this->validateUserPermission($watcherUser, $userToView);
+        $this->validateUserStatus($watcherUser);
 
-        return [
-            Keywords::NAME => $userToView->getName(),
-            Keywords::SURNAME => $userToView->getSurname(),
-            Keywords::EMAIL => $userToView->getEmail(),
-            Keywords::ROLE => $userToView->getRole(),
-            Keywords::STATUS => $userToView->getStatus(),
-            Keywords::ACCESS_TOKEN => $watcherDevice->getAccessToken()
-        ];
+        return new StatsResponseDTO($userToView, $watcherDevice);
     }
 
-    public function edit(User $userToEdit, EditDTO $userData, ?string $accessToken): array
+    public function edit(User $userToEdit, EditRequestDTO $userData, ?string $accessToken): EditResponseDTO
     {
         $editorDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
         $this->tokenService->refreshTokens($editorDevice);
 
         $editorUser = $editorDevice->getOwner();
-        $editorUser->validateUserPermission($userToEdit);
-        $editorUser->validateUserStatus($editorUser);
+        $this->validateUserPermission($editorUser, $userToEdit);
+        $this->validateUserStatus($editorUser);
 
         if ($newName = $userData->name) {
             $userToEdit->setName($newName);
@@ -124,20 +120,16 @@ readonly class UserService
 
         $this->entityManager->flush();
 
-        return [
-            Keywords::NAME => $userToEdit->getName(),
-            Keywords::SURNAME => $userToEdit->getSurname(),
-            Keywords::ACCESS_TOKEN => $editorDevice->getAccessToken()
-        ];
+        return new EditResponseDTO($userToEdit, $editorDevice);
     }
 
-    public function delete(User $userToDelete, ?string $accessToken): array
+    public function delete(User $userToDelete, ?string $accessToken): string
     {
         $deleterDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
         $this->tokenService->refreshTokens($deleterDevice);
 
         $deleterUser = $deleterDevice->getOwner();
-        $deleterUser->validateUserPermission($userToDelete);
+        $this->validateUserPermission($deleterUser, $userToDelete);
 
         foreach ($userToDelete->getMagicLinkTokens() as $magicLinkToken) {
             $this->entityManager->remove($magicLinkToken);
@@ -150,8 +142,6 @@ readonly class UserService
         $this->entityManager->remove($userToDelete);
         $this->entityManager->flush();
 
-        return [
-            Keywords::ACCESS_TOKEN => $deleterDevice->getAccessToken()
-        ];
+        return $deleterDevice->getAccessToken();
     }
 }

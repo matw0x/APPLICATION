@@ -4,13 +4,11 @@ namespace App\Entity;
 
 use App\Helper\Enum\UserRole;
 use App\Helper\Enum\UserStatus;
-use App\Helper\Exception\ApiException;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\HttpFoundation\Response;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
@@ -55,39 +53,6 @@ class User
 
         $this->role = UserRole::USER->value;
         $this->status = UserStatus::ACTIVE->value;
-    }
-
-    public static function validateUserExistence(?User $user): void
-    {
-        if (!$user)
-        {
-            throw new ApiException(
-                message: 'Пользователь не найден',
-                status: Response::HTTP_NOT_FOUND
-            );
-        }
-    }
-
-    public function validateUserPermission(User $user): void
-    {
-        if (!($this === $user || $this->getRole() === UserRole::ADMIN->value))
-        {
-            throw new ApiException(
-                message: 'Недостаточно прав для выполнения данной операции',
-                status: Response::HTTP_FORBIDDEN
-            );
-        }
-    }
-
-    public function validateUserStatus(User $user): void
-    {
-        if ($user->getStatus() === UserStatus::BLOCKED->value)
-        {
-            throw new ApiException(
-                message: 'Пользователь заблокирован',
-                status: Response::HTTP_FORBIDDEN
-            );
-        }
     }
 
     public function getId(): int

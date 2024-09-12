@@ -4,8 +4,10 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Helper\Const\Keywords;
-use App\Helper\DTO\User\EditDTO;
-use App\Helper\DTO\User\RegisterDTO;
+use App\Helper\DTO\User\Edit\EditRequestDTO;
+use App\Helper\DTO\User\Register\RegisterDTO;
+use App\Helper\DTO\User\Verify\VerifyRequestDTO;
+use App\Helper\Trait\UserValidationTrait;
 use App\Service\Entity\UserService;
 use App\Service\MagicLink\MagicLinkService;
 use App\Service\Mailer\YandexMailerService;
@@ -21,6 +23,8 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route(path: '/users')]
 class UserController extends AbstractController
 {
+    use UserValidationTrait;
+
     function __construct(
         private readonly UserService            $userService,
         private readonly SerializerInterface    $serializer,
@@ -58,7 +62,7 @@ class UserController extends AbstractController
     #[Route(path: '/verify', name: 'apiVerifyEmail', methods: Request::METHOD_POST)]
     public function verify(Request $request): JsonResponse
     {
-        $registerDTO = $this->serializer->deserialize($request->getContent(), RegisterDTO::class, 'json');
+        $registerDTO = $this->serializer->deserialize($request->getContent(), VerifyRequestDTO::class, 'json');
         $token = $request->query->get(Keywords::TOKEN);
 
         return $this->json(
@@ -67,27 +71,27 @@ class UserController extends AbstractController
         );
     }
 
-    #[Route(path: '/look/{id<\d+>}', name: 'apiLookUser', methods: Request::METHOD_GET)]
-    public function lookUser(int $id, Request $request): JsonResponse
+    #[Route(path: '/stats/{id<\d+>}', name: 'apiLookUser', methods: Request::METHOD_GET)]
+    public function stats(int $id, Request $request): JsonResponse
     {
         $userToView = $this->entityManager->getRepository(User::class)->find($id);
-        User::validateUserExistence($userToView);
+        $this->validateUserExistence($userToView);
 
         $accessToken = $request->headers->get(Keywords::TOKEN);
 
         return $this->json(
-            data: $this->userService->look($userToView, $accessToken),
+            data: $this->userService->stats($userToView, $accessToken),
             status: Response::HTTP_OK
         );
     }
 
     #[Route(path: '/edit/{id<\d+>}', name: 'apiEditUser', methods: Request::METHOD_PUT)]
-    public function editUser(int $id, Request $request): JsonResponse
+    public function edit(int $id, Request $request): JsonResponse
     {
         $userToEdit = $this->entityManager->getRepository(User::class)->find($id);
-        User::validateUserExistence($userToEdit);
+        $this->validateUserExistence($userToEdit);
 
-        $userData = $this->serializer->deserialize($request->getContent(), EditDTO::class, 'json');
+        $userData = $this->serializer->deserialize($request->getContent(), EditRequestDTO::class, 'json');
         $this->validatorService->validate(body: $userData, groupsBody: ['edit']);
 
         $accessToken = $request->headers->get(Keywords::TOKEN);
@@ -99,10 +103,10 @@ class UserController extends AbstractController
     }
 
     #[Route(path: '/delete/{id<\d+>}', name: 'apiDeleteUser', methods: Request::METHOD_DELETE)]
-    public function deleteUser(int $id, Request $request): JsonResponse
+    public function delete(int $id, Request $request): JsonResponse
     {
         $userToDelete = $this->entityManager->getRepository(User::class)->find($id);
-        User::validateUserExistence($userToDelete);
+        $this->validateUserExistence($userToDelete);
 
         $accessToken = $request->headers->get(Keywords::TOKEN);
         $this->userService->delete($userToDelete, $accessToken);
