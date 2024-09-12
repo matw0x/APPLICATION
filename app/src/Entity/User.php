@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Helper\Enum\UserRole;
+use App\Helper\Enum\UserStatus;
 use App\Helper\Exception\ApiException;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -51,6 +52,9 @@ class User
     {
         $this->magicLinkTokens = new ArrayCollection();
         $this->devices = new ArrayCollection();
+
+        $this->role = UserRole::USER->value;
+        $this->status = UserStatus::ACTIVE->value;
     }
 
     public static function validateUserExistence(?User $user): void
@@ -70,6 +74,17 @@ class User
         {
             throw new ApiException(
                 message: 'Недостаточно прав для выполнения данной операции',
+                status: Response::HTTP_FORBIDDEN
+            );
+        }
+    }
+
+    public function validateUserStatus(User $user): void
+    {
+        if ($user->getStatus() === UserStatus::BLOCKED->value)
+        {
+            throw new ApiException(
+                message: 'Пользователь заблокирован',
                 status: Response::HTTP_FORBIDDEN
             );
         }
@@ -188,7 +203,7 @@ class User
         return $this;
     }
 
-    public function getStatus(): ?int
+    public function getStatus(): int
     {
         return $this->status;
     }

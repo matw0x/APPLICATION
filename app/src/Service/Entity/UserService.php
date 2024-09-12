@@ -68,8 +68,7 @@ readonly class UserService
         $user = (new User())
             ->setEmail($magicLinkToken->getEmail())
             ->setName($registerDTO->name)
-            ->setSurname($registerDTO->surname)
-            ->setRole(UserRole::USER->value);
+            ->setSurname($registerDTO->surname);
 
         $device = $this->tokenService->createTokens($user);
 
@@ -92,14 +91,17 @@ readonly class UserService
         $watcherDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
         $this->tokenService->refreshTokens($watcherDevice);
 
-        $watcherDevice->getOwner()->validateUserPermission($userToView);
+        $watcherUser = $watcherDevice->getOwner();
+        $watcherUser->validateUserPermission($userToView);
+        $watcherUser->validateUserStatus($watcherUser);
 
         return [
-            'name' => $userToView->getName(),
-            'surname' => $userToView->getSurname(),
-            'email' => $userToView->getEmail(),
-            'role' => $userToView->getRole(),
-            'yourAccessToken' => $watcherDevice->getAccessToken()
+            Keywords::NAME => $userToView->getName(),
+            Keywords::SURNAME => $userToView->getSurname(),
+            Keywords::EMAIL => $userToView->getEmail(),
+            Keywords::ROLE => $userToView->getRole(),
+            Keywords::STATUS => $userToView->getStatus(),
+            Keywords::ACCESS_TOKEN => $watcherDevice->getAccessToken()
         ];
     }
 
@@ -108,7 +110,9 @@ readonly class UserService
         $editorDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
         $this->tokenService->refreshTokens($editorDevice);
 
-        $editorDevice->getOwner()->validateUserPermission($userToEdit);
+        $editorUser = $editorDevice->getOwner();
+        $editorUser->validateUserPermission($userToEdit);
+        $editorUser->validateUserStatus($editorUser);
 
         if ($newName = $userData->name) {
             $userToEdit->setName($newName);

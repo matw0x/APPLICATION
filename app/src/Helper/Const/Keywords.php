@@ -10,4 +10,6 @@ class Keywords
     const REFRESH_TOKEN = 'refreshToken';
     const NAME = 'name';
     const SURNAME = 'surname';
+    const EMAIL = 'email';
+    const ROLE = 'role';
 }
