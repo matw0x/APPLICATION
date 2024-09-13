@@ -39,6 +39,10 @@ RUN set -eux; \
         pgsql \
     ;
 
+
+RUN pecl install redis;
+RUN docker-php-ext-enable redis;
+
 ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV PATH="${PATH}:/root/.composer/vendor/bin"
 

@@ -5,6 +5,15 @@ x-db-env:
     POSTGRES_DB: ${POSTGRES_DB:-academy_db}
     POSTGRES_HOST: ${POSTGRES_HOST:-database}
 
+x-mailer-env:
+  environment: &env_mailer
+    MAILER_DSN: ${MAILER_DSN}
+    MAILER_FROM: ${MAILER_FROM}
+
+x-redis:
+  environment: &env_redis
+    REDIS_DSN: ${REDIS_DSN:-redis://pass@redis:6379}
+
 services:
   php:
     container_name: academy-php
@@ -14,7 +23,12 @@ services:
       target: php_base
     restart: unless-stopped
     environment:
-      <<: *env_db
+      <<:
+        [
+          *env_db,
+          *env_mailer,
+          *env_redis
+        ]
     ports:
       - '9000:9000'
     volumes:
@@ -23,6 +37,7 @@ services:
       - test-network
     depends_on:
       - postgresql
+      - redis
 
   nginx:
     container_name: academy-nginx
@@ -55,6 +70,23 @@ services:
     networks:
       - test-network
 
+  redis:
+    container_name: academy-redis
+    image: redis:latest
+    restart: unless-stopped
+    environment:
+      <<: *env_redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - cache:/data
+    networks:
+      - test-network
+
 networks:
   test-network:
     external: false
+
+volumes:
+  cache:
+    driver: local

@@ -16,6 +16,7 @@ use App\Helper\Trait\UserValidationTrait;
 use App\Repository\UserRepository;
 use App\Service\MagicLink\MagicLinkService;
 use App\Service\Mailer\YandexMailerService;
+use App\Service\RedisService;
 use App\Service\Token\TokenService;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -28,18 +29,28 @@ readonly class UserService
         private UserRepository         $userRepository,
         private TokenService           $tokenService,
         private MagicLinkService       $magicLinkService,
-        private DeviceService          $deviceService
+        private DeviceService          $deviceService,
+        private RedisService           $redisService
     )
     {
     }
 
     public function getUsers(): array // FUNC FOR TESTING!
     {
+        $cacheKey = 'users_list';
+        $cachedUsers = $this->redisService->get($cacheKey);
+
+        if ($cachedUsers !== null) {
+            return $cachedUsers;
+        }
+
         $users = $this->userRepository->findAll();
         $result = [];
         foreach ($users as $user) {
-            $result[] = $user->getName();
+            $result[] = $user->getEmail();
         }
+
+        $this->redisService->set($cacheKey, $result);
 
         return $result;
     }
