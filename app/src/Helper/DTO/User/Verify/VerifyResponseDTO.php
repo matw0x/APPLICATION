@@ -6,8 +6,8 @@ use App\Entity\Device;
 
 class VerifyResponseDTO
 {
-    private string $accessToken;
-    private string $refreshToken;
+    public string $accessToken;
+    public string $refreshToken;
 
     function __construct(Device $device)
     {

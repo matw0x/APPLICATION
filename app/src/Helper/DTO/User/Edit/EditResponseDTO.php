@@ -7,9 +7,9 @@ use App\Entity\User;
 
 class EditResponseDTO
 {
-    private string $name;
-    private string $surname;
-    private string $accessToken;
+    public string $name;
+    public string $surname;
+    public string $accessToken;
 
     function __construct(User $user, Device $device)
     {

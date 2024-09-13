@@ -63,6 +63,7 @@ class UserController extends AbstractController
     public function verify(Request $request): JsonResponse
     {
         $registerDTO = $this->serializer->deserialize($request->getContent(), VerifyRequestDTO::class, 'json');
+        $this->validatorService->validate($registerDTO, ['verify']);
         $token = $request->query->get(Keywords::TOKEN);
 
         return $this->json(
@@ -109,10 +110,9 @@ class UserController extends AbstractController
         $this->validateUserExistence($userToDelete);
 
         $accessToken = $request->headers->get(Keywords::TOKEN);
-        $this->userService->delete($userToDelete, $accessToken);
 
         return $this->json(
-            data: 'User was deleted!',
+            data: $this->userService->delete($userToDelete, $accessToken),
             status: Response::HTTP_OK
         );
     }
