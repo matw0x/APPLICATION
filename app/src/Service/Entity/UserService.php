@@ -5,6 +5,7 @@ namespace App\Service\Entity;
 use App\Entity\MagicLinkToken;
 use App\Entity\User;
 use App\Helper\Const\Keywords;
+use App\Helper\DTO\User\All;
 use App\Helper\DTO\User\Edit\EditRequestDTO;
 use App\Helper\DTO\User\Edit\EditResponseDTO;
 use App\Helper\DTO\User\Register\RegisterDTO;
@@ -12,6 +13,8 @@ use App\Helper\DTO\User\Stats\StatsResponseDTO;
 use App\Helper\DTO\User\Verify\VerifyRequestDTO;
 use App\Helper\DTO\User\Verify\VerifyResponseDTO;
 use App\Helper\Enum\MagicLinkTokenStatus;
+use App\Helper\Enum\UserStatus;
+use App\Helper\Exception\ApiException;
 use App\Helper\Trait\UserValidationTrait;
 use App\Repository\UserRepository;
 use App\Service\MagicLink\MagicLinkService;
@@ -19,6 +22,7 @@ use App\Service\Mailer\YandexMailerService;
 use App\Service\RedisService;
 use App\Service\Token\TokenService;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 readonly class UserService
 {
@@ -35,22 +39,37 @@ readonly class UserService
     {
     }
 
-    public function getUsers(): array // FUNC FOR TESTING!
+    public function getUsers(?string $accessToken): array
     {
-        $cacheKey = 'users_list';
-        $cachedUsers = $this->redisService->get($cacheKey);
+        $adminDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
+        $this->tokenService->refreshTokens($adminDevice);
 
-        if ($cachedUsers !== null) {
-            return $cachedUsers;
+        $adminUser = $adminDevice->getOwner();
+        if (!$this->isAdmin($adminUser)) {
+            throw new ApiException(message: 'Недостаточно прав для выполнения операции', status: Response::HTTP_FORBIDDEN);
+        }
+
+        $cacheKey = 'user_list';
+        $cachedData = $this->redisService->get($cacheKey);
+
+        if ($cachedData) {
+            return array_map('json_decode', array_values($cachedData));
         }
 
         $users = $this->userRepository->findAll();
         $result = [];
+
         foreach ($users as $user) {
-            $result[] = $user->getEmail();
+            $result[] = new All($user);
         }
 
-        $this->redisService->set($cacheKey, $result);
+        $redisData = [];
+        foreach ($result as $index => $userData) {
+            $redisData[$index] = json_encode($userData);
+        }
+
+        $this->redisService->set($cacheKey, $redisData);
+        $this->redisService->expire($cacheKey, 3600);
 
         return $result;
     }
@@ -97,6 +116,9 @@ readonly class UserService
         $this->entityManager->persist($device);
         $this->entityManager->flush();
 
+        $cacheKey = 'user_list';
+        $this->redisService->delete($cacheKey);
+
         return new VerifyResponseDTO($device);
     }
 
@@ -109,7 +131,18 @@ readonly class UserService
         $this->validateUserPermission($watcherUser, $userToView);
         $this->validateUserStatus($watcherUser);
 
-        return new StatsResponseDTO($userToView, $watcherDevice);
+        $cacheKey = 'user_stats_' . $userToView->getId();
+        $cachedData = $this->redisService->get($cacheKey);
+
+        if ($cachedData) {
+            return $cachedData;
+        }
+
+        $statsResponse = new StatsResponseDTO($userToView, $watcherDevice);
+        $this->redisService->set($cacheKey, (array)$statsResponse);
+        $this->redisService->expire($cacheKey, 86400);
+
+        return $statsResponse;
     }
 
     public function edit(User $userToEdit, EditRequestDTO $userData, ?string $accessToken): EditResponseDTO
@@ -131,7 +164,16 @@ readonly class UserService
 
         $this->entityManager->flush();
 
-        return new EditResponseDTO($userToEdit, $editorDevice);
+        $editResponse = new EditResponseDTO($userToEdit, $editorDevice);
+
+        $cacheKeyList = 'user_list';
+        $cacheKeyStats = 'user_stats_' . $userToEdit->getId();
+
+        $this->redisService->delete($cacheKeyList);
+        $this->redisService->set($cacheKeyStats, (array)$editResponse);
+        $this->redisService->expire($cacheKeyStats, 86400);
+
+        return $editResponse;
     }
 
     public function delete(User $userToDelete, ?string $accessToken): string
@@ -153,6 +195,37 @@ readonly class UserService
         $this->entityManager->remove($userToDelete);
         $this->entityManager->flush();
 
+        $cacheKeyList = 'user_list';
+        $cacheKeyStats = 'user_stats_' . $userToDelete->getId();
+
+        $this->redisService->delete($cacheKeyList);
+        $this->redisService->delete($cacheKeyStats);
+
         return $deleterDevice->getAccessToken();
+    }
+
+    public function block(User $userToBlock, ?string $accessToken): string
+    {
+        $blockerDevice = $this->deviceService->getDeviceByAccessToken($accessToken);
+        $this->tokenService->refreshTokens($blockerDevice);
+
+        $blockerUser = $blockerDevice->getOwner();
+        if ($this->isAdmin($blockerUser)) {
+            throw new ApiException(
+                message: 'Ваша роль не администратор!',
+                status: Response::HTTP_FORBIDDEN
+            );
+        }
+
+        $userToBlock->setStatus(UserStatus::BLOCKED->value);
+        $this->entityManager->flush();
+
+        $cacheKeyStats = 'user_stats_' . $userToBlock->getId();
+        $this->redisService->delete($cacheKeyStats);
+
+        $cacheKeyList = 'user_list';
+        $this->redisService->delete($cacheKeyList);
+
+        return $blockerDevice->getAccessToken();
     }
 }

@@ -23,7 +23,7 @@ trait UserValidationTrait
 
     public function validateUserPermission(User $checkerUser, User $userToCheck): void
     {
-        if (!($checkerUser->getRole() === UserRole::ADMIN->value || $checkerUser->getId() === $userToCheck->getId()))
+        if (!($this->isAdmin($checkerUser) || $checkerUser->getId() === $userToCheck->getId()))
         {
             throw new ApiException(
                 message: 'Недостаточно прав для выполнения данной операции',
@@ -41,5 +41,10 @@ trait UserValidationTrait
                 status: Response::HTTP_FORBIDDEN
             );
         }
+    }
+
+    public function isAdmin(User $user): bool
+    {
+        return $user->getRole() === UserRole::ADMIN->value;
     }
 }

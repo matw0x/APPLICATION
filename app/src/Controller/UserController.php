@@ -37,10 +37,10 @@ class UserController extends AbstractController
     }
 
     #[Route(path: '/all', name: 'apiGetUsers', methods: Request::METHOD_GET)]
-    public function getUsers(): JsonResponse
+    public function getUsers(Request $request): JsonResponse
     {
         return $this->json(
-            data: $this->userService->getUsers(),
+            data: $this->userService->getUsers($request->headers->get(Keywords::TOKEN)),
             status: Response::HTTP_OK
         );
     }
@@ -113,6 +113,20 @@ class UserController extends AbstractController
 
         return $this->json(
             data: $this->userService->delete($userToDelete, $accessToken),
+            status: Response::HTTP_OK
+        );
+    }
+
+    #[Route(path: '/block/{id<\d+>}', name: 'apiBlockUser', methods: Request::METHOD_PUT)]
+    public function block(int $id, Request $request): JsonResponse
+    {
+        $userToBlock = $this->entityManager->getRepository(User::class)->find($id);
+        $this->validateUserExistence($userToBlock);
+
+        $accessToken = $request->headers->get(Keywords::TOKEN);
+
+        return $this->json(
+            data: $this->userService->block($userToBlock, $accessToken),
             status: Response::HTTP_OK
         );
     }
