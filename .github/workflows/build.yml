@@ -68,5 +68,14 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           REDIS_DSN: ${{ secrets.REDIS_DSN }}
 
+      - name: Wait for the application to start
+        run: sleep 10
+
+      - name: Check container status
+        run: docker compose ps
+
+      - name: Check application logs (if needed)
+        run: docker compose logs
+
       - name: Check application health
         run: curl -f http://localhost:8080 || exit 1
