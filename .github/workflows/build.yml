@@ -50,7 +50,8 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
+        working-directory: app
+        run: composer install --prefer-dist --no-progress
 
       - name: Build and run Docker containers
         run: |
