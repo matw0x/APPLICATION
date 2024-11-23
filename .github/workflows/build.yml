@@ -1,4 +1,4 @@
-name: Build
+name: Build ^_^
 
 on:
   push:
@@ -63,11 +63,6 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           REDIS_DSN: ${{ secrets.REDIS_DSN }}
-
-      - name: Wait for database and Redis to be healthy
-        run: |
-          docker inspect --format='{{json .State.Health.Status}}' $(docker-compose ps -q database) | grep -q "healthy"
-          docker inspect --format='{{json .State.Health.Status}}' $(docker-compose ps -q redis) | grep -q "healthy"
 
       - name: Wait for application to start
         run: |
