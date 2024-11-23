@@ -17,8 +17,6 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-        ports:
-          - 5461:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -27,8 +25,6 @@ jobs:
 
       redis:
         image: redis:latest
-        ports:
-          - 6380:6379
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -53,10 +49,10 @@ jobs:
         working-directory: app
         run: composer install --prefer-dist --no-progress
 
-      - name: Stop and remove existing containers
+      - name: Stop and remove any running containers
         run: |
-          docker compose down || true
-          docker system prune -f || true
+          docker ps -q | xargs -r docker stop
+          docker ps -aq | xargs -r docker rm      
 
       - name: Build and run Docker containers
         run: docker compose -f docker-compose.yml up -d --build
@@ -68,13 +64,22 @@ jobs:
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
           REDIS_DSN: ${{ secrets.REDIS_DSN }}
 
-      - name: Wait for the application to start
-        run: sleep 10
+      - name: Wait for database and Redis to be healthy
+        run: |
+          docker inspect --format='{{json .State.Health.Status}}' $(docker-compose ps -q database) | grep -q "healthy"
+          docker inspect --format='{{json .State.Health.Status}}' $(docker-compose ps -q redis) | grep -q "healthy"
+
+      - name: Wait for application to start
+        run: |
+          for i in {1..10}; do
+            curl -f http://localhost:8080 && break || sleep 5;
+          done
 
       - name: Check container status
         run: docker compose ps
 
-      - name: Check application logs (if needed)
+      - name: Check application logs
+        if: failure()
         run: docker compose logs
 
       - name: Check application health
