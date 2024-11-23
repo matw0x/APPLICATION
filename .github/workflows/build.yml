@@ -54,8 +54,7 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Build and run Docker containers
-        run: |
-          docker-compose -f docker-compose.yml up -d
+        run: docker compose -f docker-compose.yml up -d --build
         env:
           MAILER_DSN: ${{ secrets.MAILER_DSN }}
           MAILER_FROM: ${{ secrets.MAILER_FROM }}
