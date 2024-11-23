@@ -7,8 +7,8 @@ x-db-env:
 
 x-mailer-env:
   environment: &env_mailer
-    MAILER_DSN: ${MAILER_DSN}
-    MAILER_FROM: ${MAILER_FROM}
+    MAILER_DSN: ${MAILER_DSN:-smtp://default_user:default_pass@smtp.example.com:587}
+    MAILER_FROM: ${MAILER_FROM:-default@example.com}
 
 x-redis:
   environment: &env_redis
