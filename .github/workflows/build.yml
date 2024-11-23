@@ -54,9 +54,9 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Stop and remove existing containers
-      run: |
-        docker compose down || true
-        docker system prune -f || true
+        run: |
+          docker compose down || true
+          docker system prune -f || true
 
       - name: Build and run Docker containers
         run: docker compose -f docker-compose.yml up -d --build
