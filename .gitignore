@@ -10,3 +10,4 @@
 ###< symfony/framework-bundle ###
 /docker-compose.local.yml
 /compose.override.yaml
+.idea
