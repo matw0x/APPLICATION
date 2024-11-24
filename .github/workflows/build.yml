@@ -14,9 +14,11 @@ jobs:
       database:
         image: postgres:15.2-alpine3.17
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ vars.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          DATABASE_URL: ${{ vars.DATABASE_URL }}
+          POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -57,12 +59,14 @@ jobs:
       - name: Build and run Docker containers
         run: docker compose -f docker-compose.yml up -d --build
         env:
-          MAILER_DSN: ${{ secrets.MAILER_DSN }}
-          MAILER_FROM: ${{ secrets.MAILER_FROM }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          REDIS_DSN: ${{ secrets.REDIS_DSN }}
+          MAILER_DSN: ${{ vars.MAILER_DSN }}
+          MAILER_FROM: ${{ vars.MAILER_FROM }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ vars.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          REDIS_DSN: ${{ vars.REDIS_DSN }}
+          DATABASE_URL: ${{ vars.DATABASE_URL }}
+          POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
 
       - name: Run database migrations
         run: docker exec academy-php php bin/console doctrine:migrations:migrate
@@ -70,7 +74,7 @@ jobs:
       - name: Wait for application to start
         run: |
           for i in {1..10}; do
-            sleep 2;
+            sleep 3;
           done
 
       - name: Check container status
