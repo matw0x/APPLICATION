@@ -68,6 +68,12 @@ jobs:
           DATABASE_URL: ${{ vars.DATABASE_URL }}
           POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
 
+      - name: Wait after run Docker containers
+        run: |
+          for i in {1..10}; do
+            sleep 3;
+          done
+
       - name: Run database migrations
         run: docker exec academy-php php bin/console doctrine:migrations:migrate
 

@@ -36,8 +36,10 @@ services:
     networks:
       - test-network
     depends_on:
-      - postgresql
-      - redis
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   nginx:
     container_name: academy-nginx
@@ -67,6 +69,11 @@ services:
       - '5460:5432'
     volumes:
       - ./postgres:/var/lib/postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - test-network
 
