@@ -9,16 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      MAILER_DSN: ${{ secrets.MAILER_DSN }}
-      MAILER_FROM: ${{ vars.MAILER_FROM }}
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      POSTGRES_DB: ${{ vars.POSTGRES_DB }}
-      REDIS_DSN: ${{ secrets.REDIS_DSN }}
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
-      MESSENGER_TRANSPORT_DSN: ${{ vars.MESSENGER_TRANSPORT_DSN }}
 
     services:
       database:
@@ -28,7 +18,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
       redis:
         image: redis:latest
         options: >-
@@ -62,6 +51,16 @@ jobs:
 
       - name: Build and run Docker containers
         run: docker compose -f docker-compose.yml up -d --build
+        env:
+          MAILER_DSN: ${{ secrets.MAILER_DSN }}
+          MAILER_FROM: ${{ vars.MAILER_FROM }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          REDIS_DSN: ${{ secrets.REDIS_DSN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
+          MESSENGER_TRANSPORT_DSN: ${{ vars.MESSENGER_TRANSPORT_DSN }}
 
       - name: Wait after run Docker containers
         run: |
