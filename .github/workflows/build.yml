@@ -65,7 +65,7 @@ jobs:
           REDIS_DSN: ${{ secrets.REDIS_DSN }}
 
       - name: Run database migrations
-        run: docker exec academy-php php bin/console doctrine:migrations:migrate --no-interaction
+        run: docker exec academy-php php bin/console doctrine:migrations:migrate
 
       - name: Wait for application to start
         run: |
