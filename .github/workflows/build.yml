@@ -35,6 +35,7 @@ jobs:
           POSTGRES_DB: ${{ vars.POSTGRES_DB }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
+          
       redis:
         image: redis:latest
         options: >-
